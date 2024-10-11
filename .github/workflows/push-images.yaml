@@ -37,7 +37,7 @@ jobs:
       - name: Create and push manifest
         run: |
           REPO="${{ secrets.ACCOUNT_ECR_REPO }}/${{ secrets.ECR_IMAGE_NAME }}"
-          TAG=vanilla-1.20.1-$(date +'%Y-%m-%d_%H-%M')
+          TAG=$(date +'%Y-%m-%d_%H-%M')
           podman manifest create "$REPO:$TAG"
           podman manifest add "$REPO:$TAG" docker-archive:container_aarch64
           podman manifest add "$REPO:$TAG" docker-archive:container_x86_64
