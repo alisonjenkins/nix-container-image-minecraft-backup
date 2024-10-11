@@ -1,0 +1,29 @@
+name: build-images
+run-name: build images
+
+on:
+  push:
+
+jobs:
+  build-aarch64-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf:
+            system = aarch64-linux
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: DeterminateSystems/flake-checker-action@main
+      - uses: docker/setup-qemu-action@v3
+      - name: Run `nix build`
+        run: nix build -o container_aarch64 '#.packages.aarch64-linux.container_aarch64'
+  build-x86-64-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: DeterminateSystems/flake-checker-action@main
+      - name: Run `nix build`
+        run: nix build -o container_aarch64 '#.packages.x86_64-linux.container_x86_64'
