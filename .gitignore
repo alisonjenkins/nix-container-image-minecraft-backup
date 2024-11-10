@@ -2,4 +2,6 @@
 backups
 container_aarch64
 container_x86_64
+result
+result*
 world
