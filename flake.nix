@@ -2,15 +2,19 @@
   description = "Minecraft backup using rdiff-backup";
 
   inputs = {
-    flake-utils.url = "github:numtide/flake-utils";
+    flake-utils = {
+      url = "github:numtide/flake-utils";
+      inputs.systems.follows = "systems";
+    };
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    systems.url = "github:nix-systems/default-linux";
   };
 
   outputs = { self, ... } @ inputs:
     inputs.flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import inputs.nixpkgs {
-          system = "x86_64-linux";
+          inherit system;
         };
         lib = pkgs.lib;
 
