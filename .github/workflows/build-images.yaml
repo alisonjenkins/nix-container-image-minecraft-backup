@@ -16,7 +16,7 @@ jobs:
   #     - uses: DeterminateSystems/magic-nix-cache-action@main
   #     - uses: DeterminateSystems/flake-checker-action@main
       # - uses: docker/setup-qemu-action@v3
-  build-x86-64-image:
+  build-images:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
