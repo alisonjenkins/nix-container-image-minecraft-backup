@@ -37,7 +37,7 @@ jobs:
           REPO="${{ secrets.ACCOUNT_ECR_REPO }}/${{ secrets.ECR_IMAGE_NAME }}"
           TAG=$(date +'%Y-%m-%d_%H-%M')
           podman manifest create "$REPO:$TAG"
-          podman manifest add "$REPO:$TAG" docker-archive:result-aarch64-linux.devShell-x86_64-linux.default
-          podman manifest add "$REPO:$TAG" docker-archive:result-x86_64-linux.devShell-x86_64-linux.default
+          podman manifest add "$REPO:$TAG" docker-archive:result-x86_64-linux.container_aarch64
+          podman manifest add "$REPO:$TAG" docker-archive:result-x86_64-linux.container_x86_64
           podman manifest push --all --rm "$REPO:$TAG" "docker://$REPO:$TAG"
           echo "Successfully pushed: $REPO:$TAG"
