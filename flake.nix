@@ -6,11 +6,12 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
   };
 
-  outputs = {self, ...} @ inputs:
-    inputs.flake-utils.lib.eachDefaultSystem (system: let
-      pkgs = import inputs.nixpkgs {
-        inherit system;
-      };
+  outputs = { ... } @ inputs:
+    inputs.flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = import inputs.nixpkgs {
+          inherit system;
+        };
 
       pkgs_arm64 = import inputs.nixpkgs {
         system = "aarch64-linux";
