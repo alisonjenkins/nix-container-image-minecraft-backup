@@ -28,7 +28,7 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: DeterminateSystems/flake-checker-action@main
       - name: Run `nix build`
-        run: nix develop --command "bash -c \"nix-fast-build --flake '.#packages'\""
+        run: nix develop --command bash -c "nix-fast-build --no-nom --flake '.#packages'"
       - name: Login to ECR
         run: nix develop --command bash -c "aws ecr get-login-password --region ${{ secrets.REPO_ECR_REGION }}" | podman login --username AWS --password-stdin ${{ secrets.ACCOUNT_ECR_REPO }}
       - name: Create and push manifest
