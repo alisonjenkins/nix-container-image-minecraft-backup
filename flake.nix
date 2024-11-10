@@ -40,6 +40,7 @@
           myPkgs.dockerTools.binSh
           myPkgs.dockerTools.caCertificates
           myPkgs.ps
+          myPkgs.rdiff-backup
         ];
 
         container_aarch64 = pkgs.pkgsCross.aarch64-multiplatform.dockerTools.buildLayeredImage {
