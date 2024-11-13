@@ -21,15 +21,37 @@ jobs:
           role-to-assume: ${{ secrets.REPO_IAM_ROLE }}
           aws-region: ${{ secrets.REPO_ECR_REGION }}
       - uses: actions/checkout@v4
-      - uses: docker/setup-qemu-action@v3
       - uses: DeterminateSystems/nix-installer-action@main
         with:
           extra-conf:
             extra-platforms = aarch64-linux
-      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - name: Restore and cache Nix store
+        uses: nix-community/cache-nix-action@v5
+        with:
+          # restore and save a cache using this key
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
+          # if there's no cache hit, restore a cache by this prefix
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          # collect garbage until Nix store size (in bytes) is at most this number
+          # before trying to save a new cache
+          gc-max-store-size-linux: 1073741824
+          # do purge caches
+          purge: true
+          # purge all versions of the cache
+          purge-prefixes: cache-${{ runner.os }}-
+          # created more than this number of seconds ago relative to the start of the `Post Restore` phase
+          purge-created: 0
+          # except the version with the `primary-key`, if it exists
+          purge-primary-key: never
+      - uses: cachix/cachix-action@v14
+        with:
+          name: ajenkins-public
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
       - uses: DeterminateSystems/flake-checker-action@main
+      - uses: docker/setup-qemu-action@v3
       - name: Run `nix build`
-        run: nix develop --command bash -c "nix-fast-build --no-nom --flake '.#packages'"
+        run: |
+          nix develop --command bash -c "nix-fast-build --no-nom --flake '.#packages'"
       - name: Login to ECR
         run: nix develop --command bash -c "aws ecr get-login-password --region ${{ secrets.REPO_ECR_REGION }}" | podman login --username AWS --password-stdin ${{ secrets.ACCOUNT_ECR_REPO }}
       - name: Create and push manifest
@@ -41,4 +63,4 @@ jobs:
           podman manifest add "$REPO:$TAG" docker-archive:result-x86_64-linux.container_x86_64 &
           wait
           podman manifest push --all --rm "$REPO:$TAG" "docker://$REPO:$TAG"
-          echo "Successfully pushed: $REPO:$TAG"
+          echo "Pushed: $REPO:$TAG"
