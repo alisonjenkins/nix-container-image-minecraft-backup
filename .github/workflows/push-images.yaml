@@ -21,10 +21,11 @@ jobs:
           role-to-assume: ${{ secrets.REPO_IAM_ROLE }}
           aws-region: ${{ secrets.REPO_ECR_REGION }}
       - uses: actions/checkout@v4
-      - uses: DeterminateSystems/nix-installer-action@main
-        with:
-          extra-conf:
-            extra-platforms = aarch64-linux
+      # - uses: DeterminateSystems/nix-installer-action@main
+      #   with:
+      #     extra-conf:
+      #       extra-platforms = aarch64-linux
+      - uses: nixbuild/nix-quick-install-action@v29
       - name: Restore and cache Nix store
         uses: nix-community/cache-nix-action@v5
         with:
