@@ -16,15 +16,8 @@
         pkgs = import inputs.nixpkgs {
           inherit system;
         };
+
         lib = pkgs.lib;
-
-        pkgs_arm64 = import inputs.nixpkgs {
-          system = "aarch64-linux";
-        };
-
-        pkgs_x86_64 = import inputs.nixpkgs {
-          system = "x86_64-linux";
-        };
 
         backup_world = { myPkgs }: myPkgs.writeShellScriptBin ''minecraft_backup'' ''
           set -euo pipefail
@@ -47,6 +40,10 @@
           myPkgs.rdiff-backup
           myPkgs.yazi
         ];
+
+        pkgs_arm64 = import inputs.nixpkgs {
+          system = "aarch64-linux";
+        };
 
         container_aarch64 = pkgs.pkgsCross.aarch64-multiplatform.dockerTools.buildLayeredImage {
           name = "minecraft-backup";
