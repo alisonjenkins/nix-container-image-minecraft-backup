@@ -1,20 +1,24 @@
 {
-  description = "Minecraft backup using rdiff-backup";
-
   inputs = {
-    flake-utils.url = "github:numtide/flake-utils";
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
   };
 
-  outputs = { ... } @ inputs:
-    inputs.flake-utils.lib.eachDefaultSystem (system:
-      let
-        pkgs = import inputs.nixpkgs {
-          inherit system;
-        };
+  outputs = { ... }@inputs:
+    let
+      lib = inputs.nixpkgs.lib;
+      supportedSystems = [
+        "x86_64-linux"
+        "aarch64-linux"
+      ];
+      forEachSupportedSystem = f: lib.genAttrs supportedSystems (system: f system);
+      imageName = "minecraft-backup";
+      imageTag = "latest";
+      mkDockerImage =
+        pkgs: targetSystem:
+        let
+          archSuffix = if targetSystem == "x86_64-linux" then "amd64" else "arm64";
 
-        backup_world = { pkgs }:
-          pkgs.writeShellScriptBin ''minecraft_backup'' ''
+          backup_world = { pkgs }: pkgs.writeShellScriptBin ''minecraft_backup'' ''
             set -euo pipefail
             ${pkgs.coreutils}/bin/mkdir -p $BACKUP_PATH
             while true; do
@@ -26,58 +30,64 @@
             done
           '';
 
-        container_packages = pkgs: with pkgs; [
-          (backup_world { inherit pkgs; })
-          coreutils
-          dockerTools.binSh
-          dockerTools.caCertificates
-          ps
-          rdiff-backup
-          yazi
-        ];
-
-        container_aarch64 = pkgs.pkgsCross.aarch64-multiplatform.dockerTools.buildLayeredImage {
-          name = "minecraft-backup";
-          tag = "latest-aarch64";
-          config.Cmd = [ "/bin/minecraft_backup" ];
-          contents = pkgs.pkgsCross.aarch64-multiplatform.buildEnv {
-            name = "image-root";
-            paths = container_packages { pkgs = pkgs.pkgsCross.aarch64-multiplatform; };
-            pathsToLink = [ "/bin" "/etc" "/var" ];
-          };
-          fakeRootCommands = ''
-            mkdir /tmp
-            chmod 1777 /tmp
-          '';
-        };
-
-        container_x86_64 = pkgs.dockerTools.buildLayeredImage {
-          name = "minecraft-backup";
-          tag = "latest-x86_64";
-          config.Cmd = [ "/bin/minecraft_backup" ];
-          contents = pkgs.buildEnv {
-            name = "image-root";
-            paths = (container_packages { inherit pkgs; });
-            pathsToLink = [ "/bin" "/etc" "/var" ];
-          };
-          fakeRootCommands = ''
-            mkdir /tmp
-            chmod 1777 /tmp
-          '';
-        };
-      in
-      {
-        packages = {
-          container_x86_64 = container_x86_64;
-          container_aarch64 = container_aarch64;
-        };
-
-        devShells.default = pkgs.mkShell {
-          packages = [
-            pkgs.just
-            pkgs.podman
-            pkgs.rdiff-backup
+          container_packages = { pkgs }: with pkgs; [
+            (backup_world { inherit pkgs; })
+            coreutils
+            dockerTools.binSh
+            dockerTools.caCertificates
+            ps
+            rdiff-backup
+            yazi
           ];
+        in
+        pkgs.dockerTools.buildImage {
+          name = imageName;
+          tag = "${imageTag}-${archSuffix}";
+          copyToRoot = pkgs.buildEnv {
+            name = "image-root";
+            paths = container_packages { inherit pkgs; };
+            pathsToLink = [ "/bin" ];
+          };
+        };
+    in
+    {
+      packages = forEachSupportedSystem (
+        system:
+        let
+          pkgs = import inputs.nixpkgs { inherit system; };
+
+          buildForLinux =
+            targetSystem:
+            if system == targetSystem then
+              mkDockerImage pkgs targetSystem
+            else
+              mkDockerImage
+                (import inputs.nixpkgs {
+                  localSystem = system;
+                  crossSystem = targetSystem;
+                })
+                targetSystem;
+        in
+        {
+          "amd64" = buildForLinux "x86_64-linux";
+          "arm64" = buildForLinux "aarch64-linux";
+        }
+      );
+
+      apps = forEachSupportedSystem (system: {
+        default = {
+          type = "app";
+          program = toString (
+            inputs.nixpkgs.legacyPackages.${system}.writeScript "build-multi-arch" ''
+              #!${inputs.nixpkgs.legacyPackages.${system}.bash}/bin/bash
+              set -e
+              echo "Building x86_64-linux image..."
+              nix build .#amd64 --out-link result-${system}-amd64
+              echo "Building aarch64-linux image..."
+              nix build .#arm64 --out-link result-${system}-arm64
+            ''
+          );
         };
       });
+    };
 }
