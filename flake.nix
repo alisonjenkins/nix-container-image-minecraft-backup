@@ -2,19 +2,13 @@
   description = "Minecraft backup using rdiff-backup";
 
   inputs = {
-    flake-utils = {
-      url = "github:numtide/flake-utils";
-      inputs.systems.follows = "systems";
-    };
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    systems.url = "github:nix-systems/default-linux";
   };
 
   outputs = { self, ... } @ inputs:
-    inputs.flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import inputs.nixpkgs {
-          inherit system;
+          system = "x86_64-linux";
         };
 
         lib = pkgs.lib;
@@ -79,22 +73,23 @@
         checks =
           let
             packages = lib.mapAttrs' (n: lib.nameValuePair "package-${n}") self.packages;
-            devShells = lib.mapAttrs' (n: lib.nameValuePair "devShell-${n}") self.devShells;
+            # devShells = lib.mapAttrs' (n: lib.nameValuePair "devShell-${n}") self.devShells;
           in
-          packages // devShells;
+          packages;
+          # // devShells;
 
         packages = {
-          container_x86_64 = container_x86_64;
-          container_aarch64 = container_aarch64;
+          x86_64-linux.container_aarch64 = container_aarch64;
+          x86_64-linux.container_x86_64 = container_x86_64;
         };
 
-        devShells.default = pkgs.mkShell {
-          packages = [
-            pkgs.just
-            pkgs.nix-fast-build
-            pkgs.podman
-            pkgs.rdiff-backup
-          ];
-        };
-      });
+        # devShells.default = pkgs.mkShell {
+        #   packages = [
+        #     pkgs.just
+        #     pkgs.nix-fast-build
+        #     pkgs.podman
+        #     pkgs.rdiff-backup
+        #   ];
+        # };
+      };
 }
