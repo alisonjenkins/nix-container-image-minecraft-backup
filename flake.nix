@@ -22,6 +22,10 @@
           system = "aarch64-linux";
         };
 
+        pkgs_x86_64 = import inputs.nixpkgs {
+          system = "x86_64-linux";
+        };
+
         backup_world = { myPkgs }: myPkgs.writeShellScriptBin ''minecraft_backup'' ''
           set -euo pipefail
           ${myPkgs.coreutils}/bin/mkdir -p $BACKUP_PATH
