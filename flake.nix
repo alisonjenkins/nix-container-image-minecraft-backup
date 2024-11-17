@@ -5,14 +5,24 @@
 
   outputs = { ... }@inputs:
     let
-      lib = inputs.nixpkgs.lib;
-      supportedSystems = [
-        "x86_64-linux"
-        "aarch64-linux"
-      ];
+      forEachShellSystem = f: lib.genAttrs shellSystems (system: f system);
       forEachSupportedSystem = f: lib.genAttrs supportedSystems (system: f system);
       imageName = "minecraft-backup";
       imageTag = "latest";
+      lib = inputs.nixpkgs.lib;
+
+      supportedSystems = [
+        "aarch64-linux"
+        "x86_64-linux"
+      ];
+
+      shellSystems = [
+        "aarch64-darwin"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "x86_64-linux"
+      ];
+
       mkDockerImage =
         pkgs: targetSystem:
         let
@@ -73,6 +83,23 @@
           "arm64" = buildForLinux "aarch64-linux";
         }
       );
+
+      devShells = forEachShellSystem (system:
+        (
+          let
+            pkgs = import inputs.nixpkgs {
+              inherit system;
+            };
+          in
+          {
+            "default" = pkgs.mkShellNoCC {
+              packages = [
+                pkgs.just
+                pkgs.rdiff-backup
+              ];
+            };
+          }
+        ));
 
       apps = forEachSupportedSystem (system: {
         default = {
