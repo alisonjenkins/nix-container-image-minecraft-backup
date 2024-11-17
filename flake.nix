@@ -95,6 +95,7 @@
             "default" = pkgs.mkShellNoCC {
               packages = [
                 pkgs.just
+                pkgs.nix-fast-build
                 pkgs.rdiff-backup
               ];
             };
