@@ -20,7 +20,7 @@ jobs:
         with:
           role-to-assume: ${{ secrets.REPO_IAM_ROLE }}
           aws-region: ${{ secrets.REPO_ECR_REGION }}
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: nixbuild/nix-quick-install-action@v32
       - name: Restore and cache Nix store
         uses: nix-community/cache-nix-action@v5
